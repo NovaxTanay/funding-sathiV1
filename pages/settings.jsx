@@ -2,11 +2,12 @@
 import Head from 'next/head';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { User, Lock, Camera, X } from 'lucide-react';
+import { User, Lock, Camera, X, LogOut } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import { auth } from '../lib/firebaseClient';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import useAppStore from '../store/useAppStore';
 
 const db = getFirestore();
 
@@ -18,6 +19,7 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState(null); // { type: 'success'|'error', text }
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
   // Profile fields (controlled)
   const [fullName, setFullName] = useState('');
@@ -25,6 +27,18 @@ export default function SettingsPage() {
 
   // Current user ref
   const [currentUser, setCurrentUser] = useState(null);
+
+  const { setUserProfile, reset } = useAppStore();
+
+  async function handleLogout() {
+    try {
+      await signOut(auth);
+      reset();
+      router.push('/?logout=true');
+    } catch (err) {
+      console.error('[settings] Logout failed:', err);
+    }
+  }
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains('dark'));
@@ -36,16 +50,17 @@ export default function SettingsPage() {
       setCurrentUser(user);
       if (user) {
         // Pre-fill from Firebase Auth profile
-        setFullName(user.displayName || '');
-        setEmail(user.email || '');
+        let nameVal = user.displayName || '';
+        let emailVal = user.email || '';
+        let photoVal = user.photoURL || null;
 
         // Attempt to load saved settings from Firestore
         try {
           const snap = await getDoc(doc(db, 'users', user.uid));
           if (snap.exists()) {
             const data = snap.data();
-            if (data.fullName) setFullName(data.fullName);
-            if (data.email) setEmail(data.email);
+            if (data.fullName) nameVal = data.fullName;
+            if (data.email) emailVal = data.email;
             if (typeof data.is2FA === 'boolean') setIs2FA(data.is2FA);
             if (data.theme) {
               setGlobalTheme(data.theme);
@@ -54,6 +69,14 @@ export default function SettingsPage() {
         } catch (err) {
           console.warn('[settings] Failed to load user settings:', err.message);
         }
+
+        setFullName(nameVal);
+        setEmail(emailVal);
+        setUserProfile({
+          fullName: nameVal,
+          email: emailVal,
+          photoURL: photoVal
+        });
       }
     });
     return () => unsubscribe();
@@ -90,6 +113,12 @@ export default function SettingsPage() {
         theme: dark ? 'dark' : 'light',
         updatedAt: new Date().toISOString(),
       }, { merge: true });
+
+      setUserProfile({
+        fullName,
+        email,
+        photoURL: currentUser.photoURL || null
+      });
 
       setSaved(true);
       setStatusMsg({ type: 'success', text: 'Settings saved successfully.' });
@@ -133,25 +162,62 @@ export default function SettingsPage() {
           <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
 
             {/* Left sidebar tabs */}
-            <aside className="w-full md:w-56 border-b md:border-b-0 md:border-r border-white/40 dark:border-white/10 p-2 sm:p-3 flex md:flex-col gap-1.5 shrink-0 overflow-x-auto">
-              <button onClick={() => setTab('profile')}
-                className={`flex items-center justify-center md:justify-start gap-3 px-4 py-2.5
-                            text-xs sm:text-sm font-bold w-full rounded-xl transition-all ${
-                  tab === 'profile'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-white/40 dark:hover:bg-slate-800/40'
-                }`}>
-                <User className="w-4 h-4 shrink-0" /> My Profile
-              </button>
-              <button onClick={() => setTab('security')}
-                className={`flex items-center justify-center md:justify-start gap-3 px-4 py-2.5
-                            text-xs sm:text-sm font-bold w-full rounded-xl transition-all ${
-                  tab === 'security'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-white/40 dark:hover:bg-slate-800/40'
-                }`}>
-                <Lock className="w-4 h-4 shrink-0" /> Password &amp; Security
-              </button>
+            <aside className="w-full md:w-56 border-b md:border-b-0 md:border-r border-white/40 dark:border-white/10 p-2 sm:p-3 flex md:flex-col md:justify-between gap-1.5 shrink-0 overflow-x-auto">
+              <div className="flex md:flex-col gap-1.5 w-full">
+                <button onClick={() => setTab('profile')}
+                  className={`flex items-center justify-center md:justify-start gap-3 px-4 py-2.5
+                              text-xs sm:text-sm font-bold w-full rounded-xl transition-all ${
+                    tab === 'profile'
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'text-slate-500 dark:text-slate-400 hover:bg-white/40 dark:hover:bg-slate-800/40'
+                  }`}>
+                  <User className="w-4 h-4 shrink-0" /> My Profile
+                </button>
+                <button onClick={() => setTab('security')}
+                  className={`flex items-center justify-center md:justify-start gap-3 px-4 py-2.5
+                              text-xs sm:text-sm font-bold w-full rounded-xl transition-all ${
+                    tab === 'security'
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'text-slate-500 dark:text-slate-400 hover:bg-white/40 dark:hover:bg-slate-800/40'
+                  }`}>
+                  <Lock className="w-4 h-4 shrink-0" /> Password &amp; Security
+                </button>
+              </div>
+
+              <div className="w-full flex md:flex-col shrink-0">
+                <div className="hidden md:block h-px bg-[#E5E7EB] dark:bg-white/10 my-2" />
+                {confirmLogout ? (
+                  <div className="flex flex-col gap-1.5 w-full p-2 bg-red-50/50 dark:bg-red-950/20 border border-red-100 dark:border-red-950/50 rounded-xl">
+                    <span className="text-[10px] font-bold text-red-600 dark:text-red-400 text-center uppercase tracking-wider">Are you sure?</span>
+                    <div className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="flex-1 py-1.5 text-[11px] font-bold text-white bg-red-500 hover:bg-red-600 rounded-lg transition"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmLogout(false)}
+                        className="flex-1 py-1.5 text-[11px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-400 rounded-lg transition"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmLogout(true)}
+                    className="flex items-center justify-center md:justify-start gap-3 px-4 py-2.5
+                               text-xs sm:text-sm font-bold w-full rounded-xl transition-all
+                               text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
+                  >
+                    <LogOut className="w-4 h-4 shrink-0 text-red-500" /> Logout
+                  </button>
+                )}
+              </div>
             </aside>
 
             {/* Content area */}
@@ -167,8 +233,12 @@ export default function SettingsPage() {
 
                   {/* Avatar */}
                   <div className="flex flex-col sm:flex-row items-center text-center sm:text-left gap-4 p-4 rounded-2xl bg-white/30 dark:bg-white/5 border border-white/40 dark:border-white/5">
-                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center font-bold text-xl ring-4 ring-indigo-500/20 shadow-md">
-                      {fullName ? fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'FS'}
+                    <div className="relative w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center font-bold text-xl ring-4 ring-indigo-500/20 shadow-md overflow-hidden">
+                      {currentUser?.photoURL ? (
+                        <img src={currentUser.photoURL} alt="Avatar" className="w-full h-full object-cover rounded-full" />
+                      ) : (
+                        fullName ? fullName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'FS'
+                      )}
                       <button className="absolute -bottom-1 -right-1 p-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full border border-slate-200 dark:border-white/10 hover:scale-105 transition shadow-sm">
                         <Camera className="w-3 h-3" />
                       </button>

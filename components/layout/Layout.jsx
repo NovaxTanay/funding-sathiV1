@@ -5,6 +5,10 @@ import {
   LayoutDashboard, FileText, Users, Settings,
   Menu, X, Sun, Moon,
 } from 'lucide-react';
+import useAppStore from '../../store/useAppStore';
+import { auth } from '../../lib/firebaseClient';
+import { onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -12,10 +16,75 @@ const NAV_ITEMS = [
   { href: '/leads',     label: 'Leads',     icon: Users },
 ];
 
+function AvatarButton({ profile }) {
+  const [imgError, setImgError] = useState(false);
+  const getInitials = (name) => {
+    if (!name) return "?";
+    const parts = name.trim().split(" ");
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  return (
+    <button
+      className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr
+                 from-indigo-600 to-violet-600 text-white flex items-center
+                 justify-center text-xs sm:text-sm font-bold shadow-md
+                 hover:scale-105 active:scale-95 transition-all duration-200
+                 ring-2 ring-white/50 dark:ring-slate-800/50 overflow-hidden cursor-default"
+      aria-label="User profile"
+    >
+      {profile?.photoURL && !imgError ? (
+        <img
+          src={profile.photoURL}
+          alt={profile.fullName || "User"}
+          className="w-full h-full object-cover rounded-full"
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        getInitials(profile?.fullName)
+      )}
+    </button>
+  );
+}
+
 export default function Layout({ children, pageTitle = 'Dashboard' }) {
   const router   = useRouter();
   const [dark,        setDark]        = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { userProfile, setUserProfile } = useAppStore();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        let nameVal = user.displayName || '';
+        let emailVal = user.email || '';
+        let photoVal = user.photoURL || null;
+
+        try {
+          const db = getFirestore();
+          const snap = await getDoc(doc(db, 'users', user.uid));
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data.fullName) nameVal = data.fullName;
+            if (data.email) emailVal = data.email;
+            if (data.photoURL) photoVal = data.photoURL;
+          }
+        } catch (err) {
+          console.warn('[Layout] Failed to load user settings:', err.message);
+        }
+
+        setUserProfile({
+          fullName: nameVal,
+          email: emailVal,
+          photoURL: photoVal
+        });
+      } else {
+        setUserProfile(null);
+      }
+    });
+    return () => unsubscribe();
+  }, [setUserProfile]);
 
   /* ── Theme bootstrap ─────────────────────────── */
   useEffect(() => {
@@ -175,16 +244,7 @@ export default function Layout({ children, pageTitle = 'Dashboard' }) {
                 }
               </button>
               <div className="h-6 w-px bg-slate-300 dark:bg-slate-700" />
-              <button
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr
-                           from-indigo-600 to-violet-600 text-white flex items-center
-                           justify-center text-xs sm:text-sm font-bold shadow-md
-                           hover:scale-105 active:scale-95 transition-all duration-200
-                           ring-2 ring-white/50 dark:ring-slate-800/50"
-                aria-label="User profile"
-              >
-                JD
-              </button>
+              <AvatarButton profile={userProfile} />
             </div>
           </header>
 

@@ -25,6 +25,18 @@ const useAppStore = create((set) => ({
   // UI state
   selectedLead: null,
   setSelectedLead: (lead) => set({ selectedLead: lead }),
+  userProfile: null,
+  setUserProfile: (profile) => set({ userProfile: profile }),
+  reset: () => set({
+    analysis: null,
+    formData: null,
+    leadId: null,
+    isLoading: false,
+    error: null,
+    leads: [],
+    selectedLead: null,
+    userProfile: null,
+  }),
 }));
 
 export default useAppStore;
