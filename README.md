@@ -8,7 +8,7 @@ https://fundingsathi.vercel.app
 
 ## Tech Stack
 - Next.js 14 (React + API Routes)
-- Google Gemini API (gemini-2.0-flash)
+- Open AI API (openai/gpt-oss-120b)
 - Firebase Firestore (lead registry)
 - Tailwind CSS
 - Zod (validation)
@@ -27,7 +27,7 @@ All API keys are server-side only. Browser never touches credentials.
 5. Open http://localhost:3000
 
 ## Environment Variables
-GEMINI_API_KEY=
+NVIDIA_API_KEY=
 FIREBASE_PROJECT_ID=
 FIREBASE_CLIENT_EMAIL=
 FIREBASE_PRIVATE_KEY=
