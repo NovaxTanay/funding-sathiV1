@@ -159,6 +159,7 @@ export default function BorrowerInputForm({ onSubmit, loading }) {
         ? (gstFiling ? `Registered — ${gstFiling}` : 'Registered')
         : 'Not Registered',
       gstNonRegReason: gstReg === 'Not Registered' ? gstNonRegReason : '',
+      gstFiling: gstReg === 'Registered' ? gstFiling : '',
       gstImpliedRevenue: gstImpliedRevenue !== '' ? Number(gstImpliedRevenue) : null,
       annualTurnover:   Number(turnover),
       loanRequirement:  Number(loanReq),

@@ -9,29 +9,67 @@ import {
 import Layout from '../components/layout/Layout';
 import StatusChip from '../components/ui/StatusChip';
 
-/* ── Quick Action Cards ──────────────────────────── */
-const CARDS = [
-  { label: 'New Form',    value: '+',   icon: FilePlus2,    color: 'from-indigo-600 to-violet-600',  href: '/form' },
-  { label: 'Completed',   value: '24',  icon: CheckCircle2, color: 'from-emerald-500 to-teal-500',   href: '/leads' },
-  { label: 'Incomplete',  value: '7',   icon: Clock,        color: 'from-amber-500 to-orange-500',   href: '/leads' },
-  { label: 'To Start',    value: '3',   icon: AlertCircle,  color: 'from-rose-500 to-pink-500',      href: '/form' },
-];
-
-/* ── Recent activity rows ────────────────────────── */
-const ACTIVITY = [
-  { id: 'FS-2026-0042', entity: 'Manufacturer', loan: '₹5 Cr',  status: 'Submitted to Lender', date: '08 Jun 2026' },
-  { id: 'FS-2026-0041', entity: 'Trader',       loan: '₹2.5 Cr', status: 'Under Review',        date: '07 Jun 2026' },
-  { id: 'FS-2026-0040', entity: 'Service Provider', loan: '₹1 Cr', status: 'New',               date: '06 Jun 2026' },
-];
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { db } from '../lib/firebaseClient';
+import useAppStore from '../store/useAppStore';
+import LeadDetailModal from '../components/leads/LeadDetailModal';
 
 export default function DashboardPage() {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
   const [dark, setDark] = useState(false);
+  const [leads, setLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { selectedLead, setSelectedLead } = useAppStore();
 
   useEffect(() => {
     setDark(document.documentElement.classList.contains('dark'));
   }, []);
+
+  // 1. Setup real-time listener for leads collection
+  useEffect(() => {
+    const q = query(collection(db, 'leads'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const leadsData = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || null,
+        };
+      });
+      setLeads(leadsData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Firestore leads subscription error:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Derive stat card values dynamically
+  const completedCount = leads.filter(l => l.status === "Submitted to Lender" || l.status === "Closed").length;
+  const incompleteCount = leads.filter(l => l.status === "Under Review").length;
+  const toStartCount = leads.filter(l => l.status === "New").length;
+
+  const statCards = [
+    { label: 'New Form',    value: '+',   icon: FilePlus2,    color: 'from-indigo-600 to-violet-600',  href: '/form' },
+    { label: 'Completed',   value: completedCount.toString(),  icon: CheckCircle2, color: 'from-emerald-500 to-teal-500',   href: '/leads' },
+    { label: 'Incomplete',  value: incompleteCount.toString(),   icon: Clock,        color: 'from-amber-500 to-orange-500',   href: '/leads' },
+    { label: 'To Start',    value: toStartCount.toString(),   icon: AlertCircle,  color: 'from-rose-500 to-pink-500',      href: '/form' },
+  ];
+
+  // 3. Derive pie chart data dynamically
+  const bankableCount = leads.filter(l => 
+    (l.analysisOutput?.viabilityVerdict?.classification || l.viabilityVerdict?.classification) === "Bankable"
+  ).length;
+  const conditionallyBankableCount = leads.filter(l => 
+    (l.analysisOutput?.viabilityVerdict?.classification || l.viabilityVerdict?.classification) === "Conditionally Bankable"
+  ).length;
+  const substandardCount = leads.filter(l => 
+    (l.analysisOutput?.viabilityVerdict?.classification || l.viabilityVerdict?.classification) === "Substandard"
+  ).length;
 
   /* ── Chart.js (pie) ──────────────────────────────── */
   useEffect(() => {
@@ -48,7 +86,7 @@ export default function DashboardPage() {
         data: {
           labels: ['Bankable', 'Conditionally Bankable', 'Substandard'],
           datasets: [{
-            data: [14, 7, 3],
+            data: [bankableCount, conditionallyBankableCount, substandardCount],
             backgroundColor: ['#16a34a', '#d97706', '#dc2626'],
             borderWidth: 0,
             hoverOffset: 6,
@@ -74,7 +112,22 @@ export default function DashboardPage() {
     }
     initChart();
     return () => { isMounted = false; if (chartInstance.current) chartInstance.current.destroy(); };
-  }, [dark]);
+  }, [dark, bankableCount, conditionallyBankableCount, substandardCount]);
+
+  // Helper function to format the date
+  function formatDate(date) {
+    if (!date) return '—';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+
+  // 4. Recent activity rows — show latest 5 leads ordered by createdAt descending
+  const recentActivity = leads.slice(0, 5);
 
   return (
     <>
@@ -88,7 +141,7 @@ export default function DashboardPage() {
 
           {/* ── Quick action cards ─────────────────── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-            {CARDS.map(({ label, value, icon: Icon, color, href }) => (
+            {statCards.map(({ label, value, icon: Icon, color, href }) => (
               <Link key={label} href={href}
                 className="glass-panel rounded-2xl p-4 sm:p-5 shadow-glass-sm dark:shadow-glass-dark-md
                            hover:shadow-lg transition-all duration-200 group cursor-pointer">
@@ -119,7 +172,12 @@ export default function DashboardPage() {
                 </div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">Form Completion Metrics</h3>
               </div>
-              <div className="h-52 sm:h-56">
+              <div className="h-52 sm:h-56 relative">
+                {leads.length === 0 && !loading ? (
+                  <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
+                    No leads assessed yet
+                  </div>
+                ) : null}
                 <canvas ref={chartRef} />
               </div>
             </div>
@@ -147,23 +205,44 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/20 dark:divide-white/5">
-                    {ACTIVITY.map(row => (
-                      <tr key={row.id} className="hover:bg-white/20 dark:hover:bg-slate-900/20 transition">
-                        <td className="py-3 px-5 text-xs font-bold font-mono text-slate-900 dark:text-white">{row.id}</td>
-                        <td className="py-3 px-5 text-xs text-slate-600 dark:text-slate-300">{row.entity}</td>
-                        <td className="py-3 px-5 text-xs text-slate-600 dark:text-slate-300">{row.loan}</td>
-                        <td className="py-3 px-5"><StatusChip status={row.status} /></td>
-                        <td className="py-3 px-5 text-xs text-slate-400 dark:text-slate-500">{row.date}</td>
-                        <td className="py-3 px-5 text-right">
-                          <Link href="/form"
-                            className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 font-bold text-xs hover:underline">
-                            {row.status === 'New' ? <><Play className="w-3 h-3" />Start</> :
-                             row.status === 'Under Review' ? <><Play className="w-3 h-3" />Resume</> :
-                             <><Eye className="w-3 h-3" />View</>}
-                          </Link>
+                    {recentActivity.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="py-8 text-center text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
+                          {loading ? 'Loading leads...' : 'No activity yet'}
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      recentActivity.map(row => {
+                        const entity = row.inputSnapshot?.entityType || row.entityType || '—';
+                        const loan = row.inputSnapshot?.loanRequirement || row.inputSnapshot?.loanAmount || row.loanRequirement || row.loanAmount;
+                        const loanText = loan ? `₹${loan} Cr` : '—';
+                        
+                        return (
+                          <tr key={row.leadId || row.id} className="hover:bg-white/20 dark:hover:bg-slate-900/20 transition">
+                            <td className="py-3 px-5 text-xs font-bold font-mono text-slate-900 dark:text-white">{row.leadId || row.id}</td>
+                            <td className="py-3 px-5 text-xs text-slate-600 dark:text-slate-300">{entity}</td>
+                            <td className="py-3 px-5 text-xs text-slate-600 dark:text-slate-300">{loanText}</td>
+                            <td className="py-3 px-5"><StatusChip status={row.status} /></td>
+                            <td className="py-3 px-5 text-xs text-slate-400 dark:text-slate-500">{formatDate(row.createdAt)}</td>
+                            <td className="py-3 px-5 text-right">
+                              {row.status === 'New' ? (
+                                <Link href="/form" className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 font-bold text-xs hover:underline">
+                                  <Play className="w-3 h-3" />Start
+                                </Link>
+                              ) : row.status === 'Under Review' ? (
+                                <Link href="/form" className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 font-bold text-xs hover:underline">
+                                  <Play className="w-3 h-3" />Resume
+                                </Link>
+                              ) : (
+                                <button onClick={() => setSelectedLead(row)} className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 font-bold text-xs hover:underline bg-transparent border-0 cursor-pointer p-0">
+                                  <Eye className="w-3.5 h-3.5" />View
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -171,6 +250,14 @@ export default function DashboardPage() {
           </div>
 
         </div>
+
+        {/* Detail modal */}
+        {selectedLead && (
+          <LeadDetailModal
+            lead={selectedLead}
+            onClose={() => setSelectedLead(null)}
+          />
+        )}
       </Layout>
     </>
   );
