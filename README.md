@@ -4,7 +4,7 @@ An internal tool for Relationship Managers at Funding Sathi to perform
 AI-powered first-pass credit evaluation of inbound MSME loan requests.
 
 ## Live URL
-https://fundingsathi.vercel.app
+https://[fundingsathi.vercel.app](https://funding-sathi.vercel.app/)
 
 ## Tech Stack
 - Next.js 14 (React + API Routes)
