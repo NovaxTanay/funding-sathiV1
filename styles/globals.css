@@ -1,0 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── CSS Design Tokens ───────────────────────────── */
+:root {
+  --bg-primary:        #ffffff;
+  --bg-secondary:      #f1f5f9;
+  --bg-card:           #ffffff;
+  --border:            #e2e8f0;
+  --text-primary:      #0f172a;
+  --text-secondary:    #64748b;
+  --accent-blue:       #4f46e5;
+  --status-bankable:   #16a34a;
+  --status-conditional:#d97706;
+  --status-substandard:#dc2626;
+  --nav-bg:            #0f172a;
+}
+
+/* Dark mode token overrides */
+.dark {
+  --bg-primary:        #0f172a;
+  --bg-secondary:      #020617;
+  --bg-card:           #1e293b;
+  --border:            rgba(255,255,255,0.08);
+  --text-primary:      #f1f5f9;
+  --text-secondary:    #94a3b8;
+  --accent-blue:       #818cf8;
+  --nav-bg:            #020617;
+}
+
+/* ── Glassmorphism ───────────────────────────────── */
+@layer components {
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+  }
+
+  .dark .glass-panel {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-panel-interactive {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ── Pill selector buttons ─────────────────────── */
+  .pill-btn {
+    @apply flex-1 py-2 px-4 rounded-full border border-slate-300 dark:border-white/10
+           bg-transparent text-slate-500 dark:text-slate-400 text-xs font-semibold
+           transition-all duration-200 hover:border-indigo-400 cursor-pointer;
+  }
+  .pill-btn.selected {
+    @apply bg-indigo-600 border-indigo-600 text-white font-bold;
+  }
+
+  /* ── Input base ────────────────────────────────── */
+  .form-input {
+    @apply w-full bg-slate-100 dark:bg-white/5 text-slate-800 dark:text-slate-200
+           px-4 py-2.5 text-sm rounded-xl border border-transparent
+           focus:outline-none focus:border-indigo-500 font-medium transition;
+  }
+
+  /* ── Conditional field slide animation ─────────── */
+  .conditional-field {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1),
+                opacity 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+  .conditional-field.visible {
+    max-height: 200px;
+    opacity: 1;
+  }
+
+  /* ── Range slider ──────────────────────────────── */
+  input[type="range"] {
+    accent-color: #4f46e5;
+  }
+}
+
+/* ── Scrollbar ───────────────────────────────────── */
+::-webkit-scrollbar             { width: 5px; height: 5px; }
+::-webkit-scrollbar-track       { background: transparent; }
+::-webkit-scrollbar-thumb       { background: rgba(100,116,139,0.2); border-radius: 9999px; }
+.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+
+/* ── Ambient blob helper ─────────────────────────── */
+.blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
