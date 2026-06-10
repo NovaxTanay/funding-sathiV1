@@ -1,49 +1,44 @@
-// BureauScoreIndicator.jsx — CIBIL range slider with live score badge
-import { useMemo } from 'react';
+// BureauScoreIndicator.jsx — CIBIL number input with dynamic band label
 import FormField from './FormField';
 
-function getScoreMeta(score) {
-  if (score <= 549) return { label: 'Poor',      cls: 'bg-red-100    text-red-700    dark:bg-red-900/30    dark:text-red-400'    };
-  if (score <= 649) return { label: 'Fair',      cls: 'bg-amber-100  text-amber-700  dark:bg-amber-900/30  dark:text-amber-400'  };
-  if (score <= 749) return { label: 'Good',      cls: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' };
-  return             { label: 'Excellent', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' };
+export function getBureauBand(score) {
+  const s = parseInt(score);
+  if (!s || isNaN(s)) return "";
+  if (s >= 750) return "🟢 Prime — PSU Bank eligible";
+  if (s >= 720) return "🟡 Near Prime (High) — Private Bank eligible";
+  if (s >= 700) return "🟡 Near Prime (Low) — NBFC eligible";
+  if (s >= 680) return "🟠 Subprime — NBFC only";
+  if (s >= 650) return "🔴 High Risk — Fintech only";
+  return "🔴 Declined Band";
 }
 
-export default function BureauScoreIndicator({ score, onChange, error }) {
-  const meta = useMemo(() => getScoreMeta(score), [score]);
+export default function BureauScoreIndicator({ score, onChange, error, required, helper }) {
+  const band = getBureauBand(score);
 
   return (
     <FormField
-      label="Approximate Promoter CIBIL / Bureau Score"
-      required
+      label="PROMOTER CIBIL SCORE"
+      required={required}
       error={error}
-      helper="Drag to your approximate score. Exact figure not required."
+      helper={helper}
     >
-      {/* Live badge */}
-      <div className="flex items-center gap-3 mb-3 mt-1">
-        <span className="text-2xl font-black text-slate-900 dark:text-white">{score}</span>
-        <span className={`px-3 py-1 rounded-full text-[10px] font-bold ${meta.cls}`}>
-          {meta.label}
-        </span>
-      </div>
-
-      {/* Slider */}
       <input
-        type="range"
+        type="number"
         min={300}
         max={900}
-        step={10}
-        value={score}
-        onChange={e => onChange(Number(e.target.value))}
-        aria-label="Approximate CIBIL score"
-        className="w-full h-2 rounded-full appearance-none cursor-pointer"
+        value={score === '' || score === null || score === undefined ? '' : score}
+        placeholder="e.g. 720"
+        onChange={e => {
+          const val = e.target.value === '' ? '' : Number(e.target.value);
+          onChange(val);
+        }}
+        className="form-input"
       />
-
-      {/* Range labels */}
-      <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-1">
-        <span>300</span>
-        <span>900</span>
-      </div>
+      {band && (
+        <p className="text-xs font-semibold mt-1.5 transition-colors">
+          {band}
+        </p>
+      )}
     </FormField>
   );
 }

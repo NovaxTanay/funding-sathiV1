@@ -4,6 +4,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { signInWithGoogle } from '../lib/firebaseClient';
+import { Eye, EyeOff } from 'lucide-react';
 
 /* ── Inline Google "G" logo SVG ───────────────────── */
 function GoogleIcon({ className }) {
@@ -59,6 +60,8 @@ export default function LoginPage() {
   const [dark, setDark] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [authError, setAuthError] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
 
   useEffect(() => {
     const t = localStorage.getItem('theme');
@@ -135,8 +138,26 @@ export default function LoginPage() {
             <form onSubmit={handleSignIn} className="w-full max-w-xs space-y-4">
               <input type="email" placeholder="Email Address" required
                 className="form-input w-full" />
-              <input type="password" placeholder="Password" required
-                className="form-input w-full" />
+              <div className="relative w-full">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  required
+                  className="form-input w-full pr-11"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(prev => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-slate-500 hover:text-indigo-600 focus:outline-none focus:ring-0 transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
               <Link href="/forgot-password" className="block text-right text-[11px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline">
                 Forgot Password?
               </Link>
@@ -176,8 +197,26 @@ export default function LoginPage() {
                 className="form-input w-full" />
               <input type="email" placeholder="Email Address" required
                 className="form-input w-full" />
-              <input type="password" placeholder="Password" required
-                className="form-input w-full" />
+              <div className="relative w-full">
+                <input
+                  type={showSignUpPassword ? "text" : "password"}
+                  placeholder="Password"
+                  required
+                  className="form-input w-full pr-11"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSignUpPassword(prev => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-slate-500 hover:text-indigo-600 focus:outline-none focus:ring-0 transition-colors flex items-center p-0"
+                  aria-label={showSignUpPassword ? "Hide password" : "Show password"}
+                >
+                  {showSignUpPassword ? (
+                    <EyeOff size={18} />
+                  ) : (
+                    <Eye size={18} />
+                  )}
+                </button>
+              </div>
               <button type="submit"
                 className="w-full py-3 rounded-full bg-indigo-600 hover:bg-indigo-700
                            text-white text-xs font-bold uppercase tracking-wider shadow-lg
@@ -276,7 +315,26 @@ export default function LoginPage() {
               <p className="text-xs text-slate-400 dark:text-slate-500 mb-6">Sign in to your FundingSathi account</p>
               <form onSubmit={handleSignIn} className="w-full max-w-xs space-y-4">
                 <input type="email" placeholder="Email Address" required className="form-input w-full" />
-                <input type="password" placeholder="Password" required className="form-input w-full" />
+                <div className="relative w-full">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password"
+                    required
+                    className="form-input w-full pr-11"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(prev => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-slate-500 hover:text-indigo-600 focus:outline-none focus:ring-0 transition-colors"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
                 <Link href="/forgot-password" className="block text-right text-[11px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline">
                   Forgot Password?
                 </Link>
@@ -307,7 +365,26 @@ export default function LoginPage() {
               <form onSubmit={handleSignUp} className="w-full max-w-xs space-y-4">
                 <input type="text" placeholder="Full Name" required className="form-input w-full" />
                 <input type="email" placeholder="Email Address" required className="form-input w-full" />
-                <input type="password" placeholder="Password" required className="form-input w-full" />
+                <div className="relative w-full">
+                  <input
+                    type={showSignUpPassword ? "text" : "password"}
+                    placeholder="Password"
+                    required
+                    className="form-input w-full pr-11"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSignUpPassword(prev => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-transparent border-none cursor-pointer text-slate-500 hover:text-indigo-600 focus:outline-none focus:ring-0 transition-colors flex items-center p-0"
+                    aria-label={showSignUpPassword ? "Hide password" : "Show password"}
+                  >
+                    {showSignUpPassword ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
+                  </button>
+                </div>
                 <button type="submit"
                   className="w-full py-3 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase tracking-wider shadow-lg active:scale-95 transition-all">
                   Sign Up

@@ -12,13 +12,14 @@ const STATES = [
   'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
 ];
 
-export default function SelectField({ value, onChange, error }) {
+export default function SelectField({ value, onChange, error, required, helper }) {
   return (
     <FormField
       id="state-select"
       label="State / Region"
-      required
+      required={required}
       error={error}
+      helper={helper}
     >
       <select
         id="state-select"
@@ -26,7 +27,7 @@ export default function SelectField({ value, onChange, error }) {
         onChange={e => onChange(e.target.value)}
         className="form-input appearance-none cursor-pointer"
       >
-        <option value="" disabled>Select state or UT</option>
+        <option value="">Select state or UT</option>
         {STATES.map(s => (
           <option key={s} value={s}>{s}</option>
         ))}
