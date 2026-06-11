@@ -61,6 +61,27 @@ const styles = StyleSheet.create({
 });
 
 export function AnalysisPDF({ analysis, leadId }) {
+  if (!analysis) {
+    return (
+      <Document>
+        <Page size="A4" style={styles.page}>
+          <Text style={styles.header}>FUNDING SATHI</Text>
+          <Text style={styles.subheader}>
+            Credit Analysis Report  |  Lead ID: {leadId || 'N/A'}
+          </Text>
+          <View style={styles.divider} />
+          <Text style={styles.value}>No analysis data available yet.</Text>
+        </Page>
+      </Document>
+    );
+  }
+
+  const dealViability = analysis.dealViability || {};
+  const lenderRecommendation = analysis.lenderRecommendation || {};
+  const riskFlags = analysis.riskFlags || [];
+  const documentChecklist = analysis.documentChecklist || [];
+  const rmNextAction = analysis.rmNextAction || '';
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -73,40 +94,48 @@ export function AnalysisPDF({ analysis, leadId }) {
 
         {/* 2. Deal Viability */}
         <Text style={styles.sectionTitle}>DEAL VIABILITY</Text>
-        <Text style={styles.verdict}>{analysis.dealViability.verdict}</Text>
-        <Text style={styles.value}>{analysis.dealViability.rationale}</Text>
+        <Text style={styles.verdict}>{dealViability.verdict || 'N/A'}</Text>
+        <Text style={styles.value}>{dealViability.rationale || 'N/A'}</Text>
 
         {/* 3. Lender Recommendation */}
         <Text style={styles.sectionTitle}>LENDER RECOMMENDATION</Text>
         <Text style={styles.value}>
           <Text style={styles.label}>Primary: </Text>
-          {analysis.lenderRecommendation.primary}
+          {lenderRecommendation.primary || 'N/A'}
         </Text>
-        {analysis.lenderRecommendation.secondary && (
+        {lenderRecommendation.secondary && (
           <Text style={styles.value}>
             <Text style={styles.label}>Secondary: </Text>
-            {analysis.lenderRecommendation.secondary}
+            {lenderRecommendation.secondary}
           </Text>
         )}
         <Text style={styles.value}>
-          {analysis.lenderRecommendation.justification}
+          {lenderRecommendation.justification || 'N/A'}
         </Text>
 
         {/* 4. Risk Flags */}
         <Text style={styles.sectionTitle}>RISK FLAGS</Text>
-        {analysis.riskFlags.map((flag, i) => (
-          <Text key={i} style={styles.bulletItem}>•  {flag}</Text>
-        ))}
+        {riskFlags.length > 0 ? (
+          riskFlags.map((flag, i) => (
+            <Text key={i} style={styles.bulletItem}>•  {flag}</Text>
+          ))
+        ) : (
+          <Text style={styles.value}>No risk flags reported.</Text>
+        )}
 
         {/* 5. Document Checklist */}
         <Text style={styles.sectionTitle}>DOCUMENT CHECKLIST</Text>
-        {analysis.documentChecklist.map((doc, i) => (
-          <Text key={i} style={styles.bulletItem}>•  {doc}</Text>
-        ))}
+        {documentChecklist.length > 0 ? (
+          documentChecklist.map((doc, i) => (
+            <Text key={i} style={styles.bulletItem}>•  {doc}</Text>
+          ))
+        ) : (
+          <Text style={styles.value}>No documents requested.</Text>
+        )}
 
         {/* 6. RM Next Action */}
         <Text style={styles.sectionTitle}>RM NEXT ACTION</Text>
-        <Text style={styles.value}>{analysis.rmNextAction}</Text>
+        <Text style={styles.value}>{rmNextAction || 'N/A'}</Text>
 
         {/* 7. Footer */}
         <Text style={styles.footer}>

@@ -9,7 +9,13 @@ import ExportToolbar from './ExportToolbar';
 export default function AnalysisOutputPanel({ analysis, formData, leadId }) {
   console.log('[output] analysis prop:', analysis);
   if (!analysis) return null;
-  const { dealViability, lenderRecommendation, riskFlags, documentChecklist, rmNextAction } = analysis;
+  const { 
+    dealViability = {}, 
+    lenderRecommendation = {}, 
+    riskFlags = [], 
+    documentChecklist = [], 
+    rmNextAction = '' 
+  } = analysis;
 
   return (
     <div className="space-y-4">
